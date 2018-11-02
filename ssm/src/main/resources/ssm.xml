@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jaxws="http://cxf.apache.org/jaxws"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://cxf.apache.org/jaxws
+       http://cxf.apache.org/schemas/jaxws.xsd">
+
+    <jaxws:client id="aa" serviceClass="cn.com.webxml.MobileCodeWSSoap"
+                  address="http://ws.webxml.com.cn/WebServices/MobileCodeWS.asmx?wsdl"></jaxws:client>
+
+
+    <context:component-scan base-package="com.ly"></context:component-scan>
+
+    <!--配置静态资源-->
+    <mvc:annotation-driven></mvc:annotation-driven>
+    <mvc:resources mapping="/css/**" location="/css/"></mvc:resources>
+    <mvc:resources mapping="/dtree/**" location="/dtree/"></mvc:resources>
+    <mvc:resources mapping="/Images/**" location="/Images/"></mvc:resources>
+    <mvc:resources mapping="/img/**" location="/img/"></mvc:resources>
+    <mvc:resources mapping="/Script/**" location="/Script/"></mvc:resources>
+    <mvc:resources mapping="/Style/**" location="/Style/"></mvc:resources>
+
+    <mvc:resources mapping="/uploadimage/**" location="/uploadimage/"></mvc:resources>
+
+
+
+    <!--视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/"></property>
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+
+    <!--连接数据库-->
+    <context:property-placeholder location="classpath:db.properties"></context:property-placeholder>
+    <bean id="db" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="com.mysql.jdbc.Driver"></property>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/test"></property>
+        <property name="user" value="root"></property>
+        <property name="password" value="123456"></property>
+    </bean>
+
+    <bean id="fac" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="db"></property>
+        <property name="mapperLocations" value="classpath:/mapper/*.xml"></property>
+        <property name="configLocation" value="classpath:mybatis.xml"></property>
+    </bean>
+
+   <!-- <bean id="temp" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="fac"></constructor-arg>
+    </bean>-->
+
+    <!--省略dao实现类-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.ly.dao"></property>
+       <property name="sqlSessionFactory" ref="fac"></property>
+    </bean>
+
+    <!--添加事务-->
+  <bean id="shiwu" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="db"></property>
+    </bean>
+    <tx:advice id="xt" transaction-manager="shiwu"></tx:advice>
+
+    <!--文件上传-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="utf-8"></property>
+        <property name="maxUploadSize" value="#{10*1024*1024}"></property>
+    </bean>
+
+<!--Actitvi配置-->
+    <bean id="process" class="org.activiti.spring.SpringProcessEngineConfiguration">
+        <property name="dataSource" ref="db"></property>
+        <property name="transactionManager" ref="shiwu"></property>
+        <property name="databaseSchemaUpdate" value="true"></property>
+    </bean>
+
+    <bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean">
+        <property name="processEngineConfiguration" ref="process"></property>
+
+    </bean>
+
+    <bean id="repos" factory-bean="processEngine" factory-method="getRepositoryService"></bean>
+    <bean id="run" factory-bean="processEngine" factory-method="getRuntimeService"></bean>
+    <bean id="task" factory-bean="processEngine" factory-method="getTaskService"></bean>
+    <bean id="history" factory-bean="processEngine" factory-method="getHistoryService"></bean>
+    <bean id="form" factory-bean="processEngine" factory-method="getFormService"></bean>
+
+
+
+
+</beans>
+
